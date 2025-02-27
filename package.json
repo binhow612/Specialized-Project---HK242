@@ -1,0 +1,30 @@
+{
+  "name": "specialized-project",
+  "version": "1.0.0",
+  "description": "Our project",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binhow612/Specialized-Project---HK242.git"
+  },
+  "keywords": [
+    "nodejs",
+    "react"
+  ],
+  "author": "Binh Hao Phan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/binhow612/Specialized-Project---HK242/issues"
+  },
+  "homepage": "https://github.com/binhow612/Specialized-Project---HK242#readme",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
