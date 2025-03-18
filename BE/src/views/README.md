@@ -1,1 +1,0 @@
-Views (for templating, optional if using a frontend separately)

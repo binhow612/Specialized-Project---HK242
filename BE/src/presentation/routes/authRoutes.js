@@ -1,7 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const pool = require("../config/db");
+const pool = require("../../persistence/database/connection");
+const securityConfig = require("../../config/securityConfig");
+const eventLogger = require("../../middleware/eventLogger");
 
 const router = express.Router();
 
@@ -9,14 +11,13 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   try {
     const { first_name, last_name, email, password, phoneNumber, role } = req.body;
-    // console.log(req.body);
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, securityConfig.bcryptSaltRounds);
 
-    const [user] = await pool.execute(
+    await pool.execute(
       "INSERT INTO User (first_name, last_name, email, password, phoneNumber, role) VALUES (?, ?, ?, ?, ?, ?)",
       [first_name, last_name, email, hashedPassword, phoneNumber, role]
     );
-
+    eventLogger(`New user registered: ${email}`);
     res.status(201).json({ message: "Đăng ký thành công" });
   } catch (error) {
     res.status(500).json({ error: `${error}` });
@@ -36,10 +37,15 @@ router.post("/login", async (req, res) => {
 
     if (!isMatch) return res.status(401).json({ error: "Sai mật khẩu" });
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "10d" });
-    res.status(200).json({ 'Token': token, userId: user.id });
+    const token = jwt.sign(
+      { id: user.id, role: user.role }, 
+      securityConfig.jwt.secret, 
+      { expiresIn: securityConfig.jwt.expiresIn }
+    );
+    eventLogger(`User logs in: ${user.id}`)
+    res.status(200).json({ Token: token, userId: user.id, userRole: user.role });
   } catch (error) {
-    res.status(500).json({ error: "Lỗi server" });
+    res.status(500).json({ error: `${error}` });
   }
 });
 

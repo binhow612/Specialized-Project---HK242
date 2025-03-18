@@ -1,40 +1,15 @@
 const express = require("express");
-const pool = require("../config/db");
-
+const pool = require("../../persistence/database/connection");
+const eventLogger = require("../../middleware/eventLogger")
 const router = express.Router();
 
-// Lấy danh sách xe đang được bán
-router.get("/", async (req, res) => {
+// Lấy danh sách xe theo trạng thái (đã bán/đang bán)
+router.get("/:status?", async (req, res) => {
   try {
-    const status = 'Available';
-    const isDeleted = 0;
-    const query = `
-    SELECT 
-        l.*, 
-        u.first_name, u.last_name, u.email, u.phoneNumber,
-        c.brand, c.model, c.year, c.transmission, c.driveSystem, c.price, c.mileage, c.origin
-    FROM 
-        ListingDetail AS l
-    INNER JOIN 
-        User AS u ON l.userId = u.id
-    INNER JOIN 
-        CarDetail AS c ON l.carId = c.id
-    WHERE 
-        l.status = ? AND u.isDeleted = ?;
-    `;
+    let { status } = req.params;
+    if (!status)
+      status = 'Available';
 
-    const [cars] = await pool.execute(query, [status, isDeleted]);
-    res.status(200).json(cars);
-  } catch (error) {
-    res.status(500).json({ error: `${error}` });
-  }
-});
-
-
-// Lấy danh sách xe đã bán
-router.get("/carSold", async (req, res) => {
-  try {
-    const status = 'Sold';
     const isDeleted = 0;
     const query = `
     SELECT 
@@ -60,9 +35,9 @@ router.get("/carSold", async (req, res) => {
 
 
 // Lấy thông tin xe = id của ListingDetail
-router.get("/:id", async (req, res) => {
+router.get("/car/:listingId", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { listingId } = req.params;
     // console.log(id);
     const isDeleted = 0;
     const query = `
@@ -79,7 +54,7 @@ router.get("/:id", async (req, res) => {
     WHERE 
         l.id = ? AND u.isDeleted = ?;
     `;
-    const [car] = await pool.execute(query, [id, isDeleted]);
+    const [car] = await pool.execute(query, [listingId, isDeleted]);
     res.status(200).json(car);
   } catch (error) {
     res.status(500).json({error: `${error}`});
@@ -88,8 +63,8 @@ router.get("/:id", async (req, res) => {
 
 
 // Sửa thông tin về CarDetail (trong bảng CarDetail)
-router.patch("/:id", async (req, res) => {
-  const { id } = req.params;
+router.patch("/:carId", async (req, res) => {
+  const { carId } = req.params;
   const fields = req.body;
 
   if (!Object.keys(fields).length) {
@@ -102,10 +77,11 @@ router.patch("/:id", async (req, res) => {
             updates.push(`${key} = ?`);
             values.push(value);
         }
-        values.push(id);
+        values.push(carId);
 
         const sql = `UPDATE CarDetail SET ${updates.join(', ')} WHERE id = ?`;
         await pool.execute(sql, values);
+
         res.json({ message: 'Product updated successfully' });
   } catch (error) {
     res.status(500).json({error: `${error}`});
